@@ -1,3 +1,5 @@
+USE_THREADED = True
+
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -7,6 +9,7 @@ import json
 import hashlib
 from collections import defaultdict
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
@@ -158,62 +161,71 @@ def scrape_page(query, page_num, downloaded, progress, subclass_counts):
 
     soup = BeautifulSoup(res.text, 'html.parser')
     cards = soup.find_all("div", class_="resultPreview")
-
-    for card in cards:
-        plane_type, img_url = get_entry_data(card)
-        if not plane_type or not img_url:
-            continue
-
-        aircraft_class, raw_type = map_aircraft_type(plane_type)
-        if not aircraft_class:
-            continue
-
-        for subclass_group, subclass_list in SUBCLASS_LIMITS.items():
-            for subclass in subclass_list:
-                if subclass in raw_type:
-                    key = f"{subclass_group}:{subclass}"
-                    if subclass_counts.get(key, 0) >= SUBCLASS_TARGETS[subclass_group]:
-                        break
-                    if img_url in downloaded:
-                        break
-                    hash_str = hashlib.md5(img_url.encode()).hexdigest()[:8]
-                    folder = os.path.join(SAVE_DIR, aircraft_class, subclass)
-                    os.makedirs(folder, exist_ok=True)
-                    filename = os.path.join(folder, f"{aircraft_class}_{hash_str}.jpg")
-                    try:
-                        img_data = requests.get(img_url, headers=HEADERS).content
-                        with open(filename, 'wb') as f:
-                            f.write(img_data)
-                        downloaded.add(img_url)
-                        subclass_counts[key] = subclass_counts.get(key, 0) + 1
-                        progress[aircraft_class] = progress.get(aircraft_class, 0) + 1
-                        print_progress(progress, subclass_counts)
-                    except Exception as e:
-                        print(f"Error downloading image: {e}")
-                    break
-        else:
-            if progress.get(aircraft_class, 0) >= LIMIT_PER_CLASS:
+    if USE_THREADED:
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_card = {executor.submit(get_entry_data, card): card for card in cards}
+            for future in as_completed(future_to_card):
+                try:
+                    plane_type, img_url = future.result()
+                except Exception as e:
+                    print(f"Thread error: {e}")
+                    continue
+    else:
+        for card in cards:
+            plane_type, img_url = get_entry_data(card)
+            if not plane_type or not img_url:
                 continue
-            if img_url in downloaded:
+
+            aircraft_class, raw_type = map_aircraft_type(plane_type)
+            if not aircraft_class:
                 continue
-            hash_str = hashlib.md5(img_url.encode()).hexdigest()[:8]
-            folder = os.path.join(SAVE_DIR, aircraft_class)
-            os.makedirs(folder, exist_ok=True)
-            filename = os.path.join(folder, f"{aircraft_class}_{hash_str}.jpg")
-            try:
-                img_data = requests.get(img_url, headers=HEADERS).content
-                with open(filename, 'wb') as f:
-                    f.write(img_data)
-                downloaded.add(img_url)
-                progress[aircraft_class] = progress.get(aircraft_class, 0) + 1
-                print_progress(progress, subclass_counts)
-            except Exception as e:
-                print(f"Error downloading image: {e}")
 
-    if time.time() - start_time > MAX_TIME_PER_PAGE:
-        print(f"Page {page_num} for query '{query}' took too long. Skipping early.")
+            for subclass_group, subclass_list in SUBCLASS_LIMITS.items():
+                for subclass in subclass_list:
+                    if subclass in raw_type:
+                        key = f"{subclass_group}:{subclass}"
+                        if subclass_counts.get(key, 0) >= SUBCLASS_TARGETS[subclass_group]:
+                            break
+                        if img_url in downloaded:
+                            break
+                        hash_str = hashlib.md5(img_url.encode()).hexdigest()[:8]
+                        folder = os.path.join(SAVE_DIR, aircraft_class, subclass)
+                        os.makedirs(folder, exist_ok=True)
+                        filename = os.path.join(folder, f"{aircraft_class}_{hash_str}.jpg")
+                        try:
+                            img_data = requests.get(img_url, headers=HEADERS).content
+                            with open(filename, 'wb') as f:
+                                f.write(img_data)
+                            downloaded.add(img_url)
+                            subclass_counts[key] = subclass_counts.get(key, 0) + 1
+                            progress[aircraft_class] = progress.get(aircraft_class, 0) + 1
+                            print_progress(progress, subclass_counts)
+                        except Exception as e:
+                            print(f"Error downloading image: {e}")
+                        break
+            else:
+                if progress.get(aircraft_class, 0) >= LIMIT_PER_CLASS:
+                    continue
+                if img_url in downloaded:
+                    continue
+                hash_str = hashlib.md5(img_url.encode()).hexdigest()[:8]
+                folder = os.path.join(SAVE_DIR, aircraft_class)
+                os.makedirs(folder, exist_ok=True)
+                filename = os.path.join(folder, f"{aircraft_class}_{hash_str}.jpg")
+                try:
+                    img_data = requests.get(img_url, headers=HEADERS).content
+                    with open(filename, 'wb') as f:
+                        f.write(img_data)
+                    downloaded.add(img_url)
+                    progress[aircraft_class] = progress.get(aircraft_class, 0) + 1
+                    print_progress(progress, subclass_counts)
+                except Exception as e:
+                    print(f"Error downloading image: {e}")
 
-    return downloaded, progress, subclass_counts
+        if time.time() - start_time > MAX_TIME_PER_PAGE:
+            print(f"Page {page_num} for query '{query}' took too long. Skipping early.")
+
+        return downloaded, progress, subclass_counts
 
 def format_time(seconds):
     seconds = int(seconds)
