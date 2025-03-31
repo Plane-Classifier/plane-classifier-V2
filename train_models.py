@@ -18,6 +18,7 @@ subclass_model.train(
     data=subclass_yaml,
     epochs=epochs,
     imgsz=imgsz,
+    amp=True,
     batch=batch,
     name="subclass_model"
 )
@@ -30,6 +31,7 @@ class_model.train(
     data=class_yaml,
     epochs=epochs,
     imgsz=imgsz,
+    amp=True,
     batch=batch,
     name="class_model"
 )
