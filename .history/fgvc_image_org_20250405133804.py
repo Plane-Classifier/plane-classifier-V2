@@ -2,16 +2,11 @@ import os
 import shutil
 import pandas as pd
 
-"""
-This script reorganizes the FGVC Aircraft dataset for YOLOv8 classification mode.
-It was run on 4.5.2025 and should not need to be run again unless the dataset structure changes.
-"""
-
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RAW_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_raw")  # correct directory name!
+RAW_DIR = os.path.join(BASE_DIR, "dataset", "fgvc_raw")  # correct directory name!
 IMAGE_SRC = os.path.join(RAW_DIR, "fgvc-aircraft-2013b", "fgvc-aircraft-2013b", "data", "images")
-OUTPUT_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_aircraft_cls")
+OUTPUT_DIR = os.path.join(BASE_DIR, "dataset", "fgvc_aircraft_cls")
 splits = ["train", "val", "test"]
 
 # --- REORGANIZE DATA ---
@@ -34,4 +29,4 @@ for split in splits:
         else:
             print(f"[WARN] Missing file: {src_img_path}")
 
-print(" Dataset reorganized for YOLOv8 classification mode.")
+print("✅ Dataset reorganized for YOLOv8 classification mode.")
