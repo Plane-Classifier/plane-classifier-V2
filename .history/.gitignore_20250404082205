@@ -3,7 +3,6 @@ downloaded_planes/
 augmented/
 dataset_class/
 dataset_subclass/
-dataset/
 
 # Ignore YOLO training outputs
 runs/
@@ -24,7 +23,3 @@ __pycache__/
 # Ignore system files
 .DS_Store
 Thumbs.db
-
-# ignor virtual environments
-.venv/
-venv/
