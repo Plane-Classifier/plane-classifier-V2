@@ -8,7 +8,7 @@ datasets/
 
 # Ignore YOLO training outputs
 runs/
-*.pt
+yolo*.pt
 *.onnx
 *.engine
 
