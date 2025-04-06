@@ -16,6 +16,7 @@ runs/
 yolo_annotations/
 yolo_visuals/
 
+
 # Ignore state files and logs
 *.log
 scraper_state.json
@@ -26,7 +27,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# ignor virtual environments
+# ignore virtual environments
 .venv/
 venv/
 .conda/
+
+# History files
+.history/
+
