@@ -9,7 +9,7 @@ from ultralytics import YOLO
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_aircraft_cls")
 
-MODEL_TYPE = "yolo8m-cls.pt"
+MODEL_TYPE = "yolov8m-cls.pt"
 # MODEL_TYPE = "yolov8x-cls.pt"
 EPOCHS = 50
 IMAGE_SIZE = 256
