@@ -1,10 +1,31 @@
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import subprocess
 import threading
 import time
 import torch
-from ultralytics import YOLO
 from datetime import timedelta
+from ultralytics import YOLO
+
+# ------------------- CONFIGURATION -------------------
+
+# Paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_aircraft_cls")
+
+# Training parameters
+MODEL_TYPE = "yolov8m-cls.pt"
+EPOCHS = 30
+IMAGE_SIZE = 192
+BATCH_SIZE = 96
+NUM_WORKERS = 2
+USE_AMP = True
+USE_CACHE = True
+
+# Pause behavior
+PAUSE_KEY = b'p'
+PAUSE_TIMEOUT_SECONDS = 60
 
 # ------------------- GPU Monitoring -------------------
 
@@ -16,7 +37,7 @@ def print_gpu_status():
     except Exception as e:
         print("Could not retrieve GPU usage:", e)
 
-# ------------------- Pause Mechanism with Timeout -------------------
+# ------------------- Pause Mechanism -------------------
 
 pause_flag = False
 last_toggle_time = time.time()
@@ -25,78 +46,70 @@ def check_for_pause():
     global pause_flag, last_toggle_time
     try:
         import msvcrt
-        print("\nPress 'p' to pause/resume training. Idle timeout is 60 seconds.\n")
+        print(f"\nPress '{PAUSE_KEY.decode()}' to pause/resume training. Auto-resumes after {PAUSE_TIMEOUT_SECONDS} seconds.\n")
         while True:
             if msvcrt.kbhit():
                 key = msvcrt.getch()
-                if key == b'p':
+                if key == PAUSE_KEY:
                     pause_flag = not pause_flag
                     last_toggle_time = time.time()
                     status = "paused" if pause_flag else "resumed"
                     print(f"\nTraining {status}.\n")
 
-            if pause_flag and (time.time() - last_toggle_time > 60):
+            if pause_flag and (time.time() - last_toggle_time > PAUSE_TIMEOUT_SECONDS):
                 pause_flag = False
-                print("\nNo input for 60 seconds. Auto-resuming training.\n")
+                print(f"\nNo input for {PAUSE_TIMEOUT_SECONDS} seconds. Auto-resuming training.\n")
+
             time.sleep(0.5)
     except ImportError:
         print("Pause feature is only supported on Windows with msvcrt.")
 
-pause_thread = threading.Thread(target=check_for_pause, daemon=True)
-pause_thread.start()
+# ------------------- MAIN EXECUTION -------------------
 
-# ------------------- System Info -------------------
+if __name__ == "__main__":
+    # Start pause monitoring thread
+    pause_thread = threading.Thread(target=check_for_pause, daemon=True)
+    pause_thread.start()
 
-print("PyTorch version:", torch.__version__)
-print("CUDA available:", torch.cuda.is_available())
-if torch.cuda.is_available():
-    print("Using GPU:", torch.cuda.get_device_name(0))
-else:
-    print("CUDA not available. Training will run on CPU.")
+    print("PyTorch version:", torch.__version__)
+    print("CUDA available:", torch.cuda.is_available())
+    if torch.cuda.is_available():
+        print("Using GPU:", torch.cuda.get_device_name(0))
+    else:
+        print("CUDA not available. Training will run on CPU.")
 
-# ------------------- Training Configuration -------------------
+    model = YOLO(MODEL_TYPE)
+    epoch_times = []
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_aircraft_cls")
-MODEL_TYPE = "yolov8m-cls.pt"
-EPOCHS = 30
-IMAGE_SIZE = 224
-BATCH_SIZE = 64
-NUM_WORKERS = 4
+    for epoch_chunk in range(EPOCHS):
+        while pause_flag:
+            print("Paused... waiting.")
+            time.sleep(2)
 
-model = YOLO(MODEL_TYPE)
+        print(f"\nStarting epoch {epoch_chunk + 1} of {EPOCHS}")
+        print_gpu_status()
 
-# ------------------- Training Loop -------------------
+        epoch_start = time.time()
 
-epoch_times = []
+        results = model.train(
+            data=DATA_DIR,
+            epochs=1,
+            imgsz=IMAGE_SIZE,
+            batch=BATCH_SIZE,
+            workers=NUM_WORKERS,
+            amp=USE_AMP,
+            cache=USE_CACHE,
+            verbose=False
+        )
 
-for epoch_chunk in range(EPOCHS):
-    while pause_flag:
-        print("Paused... waiting.")
-        time.sleep(2)
+        epoch_duration = time.time() - epoch_start
+        epoch_times.append(epoch_duration)
+        avg_epoch_time = sum(epoch_times) / len(epoch_times)
+        remaining_epochs = EPOCHS - (epoch_chunk + 1)
+        eta = timedelta(seconds=int(avg_epoch_time * remaining_epochs))
 
-    print(f"\nStarting epoch {epoch_chunk + 1} of {EPOCHS}")
-    print_gpu_status()
+        print(f"Epoch {epoch_chunk + 1} duration: {timedelta(seconds=int(epoch_duration))}")
+        print(f"Estimated time remaining: {eta}")
 
-    epoch_start = time.time()
-
-    results = model.train(
-        data=DATA_DIR,
-        epochs=1,
-        imgsz=IMAGE_SIZE,
-        batch=BATCH_SIZE,
-        workers=NUM_WORKERS,
-        verbose=False
-    )
-
-    epoch_duration = time.time() - epoch_start
-    epoch_times.append(epoch_duration)
-    avg_epoch_time = sum(epoch_times) / len(epoch_times)
-    remaining_epochs = EPOCHS - (epoch_chunk + 1)
-    eta = timedelta(seconds=int(avg_epoch_time * remaining_epochs))
-
-    print(f"Epoch {epoch_chunk + 1} duration: {timedelta(seconds=int(epoch_duration))}")
-    print(f"Estimated time remaining: {eta}")
-
-print("\nTraining complete.")
-print("Results saved to:", results.save_dir)
+    print("\nTraining complete.")
+    print("Results saved to:", results.save_dir)
