@@ -3,10 +3,26 @@ import random
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+"""This script reshuffles the buckets from the default 0.33/0.33/0.33 split to 0.7/0.2/0.1 for train/val/test
+"""
+
+# --- CONFIGURATION ---
+# Split ratios - Enter new ratios. Make sure they sum to 1.0
+train_split = 0.7
+val_split = 0.2 
+test_split = 0.1
+
+try:
+    total = train_split + val_split + test_split
+    if not abs(total - 1.0) < 1e-6:
+        raise ValueError("Split ratios must sum to 1.0.")
+except ValueError as e:
+    raise ValueError(f"Invalid split configuration: {e}")
+
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_aircraft_cls")
-SPLITS = {'train': 0.7, 'val': 0.2, 'test': 0.1}
+SPLITS = {'train': train_split, 'val': val_split, 'test': test_split}
 OUTPUT_DIR = os.path.join(BASE_DIR, "datasets", "fgvc_raw")
 
 all_data = []
