@@ -1,0 +1,25 @@
+# Ignore training images, labels, and augmented data
+downloaded_planes/
+augmented/
+dataset_class/
+dataset_subclass/
+
+# Ignore YOLO training outputs
+runs/
+*.pt
+*.onnx
+*.engine
+
+# Ignore annotation outputs
+yolo_annotations/
+yolo_visuals/
+
+# Ignore state files and logs
+*.log
+scraper_state.json
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+Thumbs.db
