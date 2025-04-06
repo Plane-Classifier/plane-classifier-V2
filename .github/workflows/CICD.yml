@@ -27,4 +27,4 @@ jobs:
         run: python test_inference.py
 
       - name: Deploy to Streamlit Cloud (auto handled if connected)
-        run: echo "✅ CI complete. App will auto-deploy on Streamlit Cloud."
+        run: echo "CI complete. App will auto-deploy on Streamlit Cloud."
