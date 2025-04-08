@@ -3,17 +3,19 @@ downloaded_planes/
 augmented/
 dataset_class/
 dataset_subclass/
+dataset/
 datasets/
 
 # Ignore YOLO training outputs
 runs/
-*.pt
+yolo*.pt
 *.onnx
 *.engine
 
 # Ignore annotation outputs
 yolo_annotations/
 yolo_visuals/
+
 
 # Ignore state files and logs
 *.log
@@ -25,5 +27,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-.history/
+# ignore virtual environments
+.venv/
+venv/
 .conda/
+
+# History files
+.history/
+
