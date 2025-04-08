@@ -3,6 +3,7 @@ downloaded_planes/
 augmented/
 dataset_class/
 dataset_subclass/
+datasets/
 
 # Ignore YOLO training outputs
 runs/
