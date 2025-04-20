@@ -28,9 +28,9 @@ jobs: #Run on ubuntu
 
       - name: Lint #Check for errors
         run: |
-          pip install flake8
-          flake8 Web_App/ --ignore=E501
-
+          pip install flake8 
+          flake8 Web_App/ --ignore=E501,E402 
+        #ignore long lines and imports not at top because we have to preempt imports to fix runtime errors on cloud                  
 
       
 
