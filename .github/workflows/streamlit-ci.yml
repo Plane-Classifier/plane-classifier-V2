@@ -1,0 +1,41 @@
+#This is the check and streamlit auto deploys any push to main
+#This will alert of install/syntax errors before deploying to app
+
+name: Streamlit CI #Workflow Name
+
+on: #Run everytime there is a push to main
+  push:
+    branches:
+      - main  
+
+jobs: #Run on ubuntu
+  test-install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo #checkout repo so that it can be run
+        uses: actions/checkout@v3
+
+      - name: Set up Python #install python for running
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install dependencies #install packages from "requirements.txt" note: if this fails WebApp would fail
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint #Check for errors
+        run: |
+          pip install flake8
+          flake8 Web_App/ --ignore=E501
+
+
+      
+
+      # Optional: Run tests if you have a test suite
+      # - name: Run tests
+      #   run: pytest
+
+
