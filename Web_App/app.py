@@ -1,8 +1,9 @@
+import os
+os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
+
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
-import os
-os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 
 # Load your YOLOv8 classification model
 st.set_page_config(page_title="Plane Classifier",
