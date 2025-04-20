@@ -3,4 +3,4 @@ ultralytics
 torch
 torchvision
 Pillow
-opencv-python
+opencv-python-headless
